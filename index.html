@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thử Thách Trí Tuệ - Brain Power Quiz</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tone.js cho hiệu ứng âm thanh sống động -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <!-- Canvas Confetti cho hiệu ứng pháo hoa khi chiến thắng -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Gradient động background */
+        .bg-animated {
+            background: linear-gradient(-45deg, #0f172a, #1e1b4b, #311042, #0284c7);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Glassmorphism Card Style */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Tile hiệu ứng thẻ lật memory */
+        .memory-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+
+        .memory-card:active {
+            transform: scale(0.95);
+        }
+
+        /* Nút tương tác hiệu ứng 3D */
+        .btn-action {
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+        }
+        .btn-action:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 0 rgba(0,0,0,0.2);
+        }
+        .btn-action:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 rgba(0,0,0,0.2);
+        }
+
+        /* Animate Shake khi sai */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-10px); }
+            40%, 80% { transform: translateX(10px); }
+        }
+        .animate-shake {
+            animation: shake 0.4s ease-in-out;
+        }
+
+        /* Progress Bar Animation */
+        .timer-progress {
+            transition: width 0.1s linear;
+        }
+    </style>
+</head>
+<body class="bg-animated min-h-screen text-white flex flex-col justify-between overflow-x-hidden">
+
+    <!-- HEADER / NAVIGATION -->
+    <header class="w-full p-4 flex justify-between items-center max-w-4xl mx-auto">
+        <div class="flex items-center space-x-3 cursor-pointer" onclick="showScreen('screen-welcome')">
+            <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-400 to-pink-500 flex items-center justify-center shadow-lg">
+                <i class="fa-solid fa-brain text-2xl text-white"></i>
+            </div>
+            <span class="text-xl font-extrabold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-amber-300 via-pink-300 to-cyan-300">
+                BRAIN MASTER
+            </span>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <button id="sound-btn" onclick="toggleSound()" class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-amber-300 transition-all">
+                <i class="fa-solid fa-volume-high text-lg" id="sound-icon"></i>
+            </button>
+            <div class="hidden sm:flex items-center space-x-2 bg-white/10 px-4 py-2 rounded-full border border-white/10">
+                <i class="fa-solid fa-trophy text-amber-400"></i>
+                <span id="header-high-score" class="font-bold text-amber-300">0</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN GAME CONTAINER (SPA SCREENS) -->
+    <main class="w-full max-w-2xl mx-auto p-4 my-auto">
+
+        <!-- 1. MAN HINH CHAO (WELCOME SCREEN) -->
+        <section id="screen-welcome" class="glass-card rounded-3xl p-6 sm:p-10 text-center flex flex-col items-center">
+            <div class="relative mb-6">
+                <div class="w-28 h-28 rounded-full bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center animate-bounce shadow-2xl">
+                    <i class="fa-solid fa-brain text-6xl text-white"></i>
+                </div>
+                <div class="absolute -bottom-2 -right-2 bg-amber-400 text-slate-900 font-black text-xs px-3 py-1 rounded-full uppercase tracking-wider shadow">
+                    Pro Quiz
+                </div>
+            </div>
+
+            <h1 class="text-3xl sm:text-4xl font-black mb-3 text-white tracking-wide">
+                THỬ THÁCH TRÍ TUỆ
+            </h1>
+            <p class="text-slate-300 text-sm sm:text-base max-w-md mb-8 leading-relaxed">
+                Rèn luyện tư duy, trí nhớ và khả năng quan sát với chuỗi thử thách đa dạng tăng dần độ khó!
+            </p>
+
+            <!-- Features Mini Cards -->
+            <div class="grid grid-cols-3 gap-3 w-full mb-8">
+                <div class="bg-white/5 p-3 rounded-2xl border border-white/10 text-center">
+                    <i class="fa-solid fa-memory text-cyan-400 text-2xl mb-1"></i>
+                    <p class="text-xs font-semibold text-slate-300">Ghi Nhớ</p>
+                </div>
+                <div class="bg-white/5 p-3 rounded-2xl border border-white/10 text-center">
+                    <i class="fa-solid fa-calculator text-emerald-400 text-2xl mb-1"></i>
+                    <p class="text-xs font-semibold text-slate-300">Logic & Toán</p>
+                </div>
+                <div class="bg-white/5 p-3 rounded-2xl border border-white/10 text-center">
+                    <i class="fa-solid fa-eye text-amber-400 text-2xl mb-1"></i>
+                    <p class="text-xs font-semibold text-slate-300">Quan Sát</p>
+                </div>
+            </div>
+
+            <button onclick="startGame()" class="btn-action w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-400 to-teal-500 text-slate-900 font-black text-lg tracking-wider hover:opacity-95 uppercase shadow-emerald-500/20 shadow-lg">
+                <i class="fa-solid fa-play mr-2"></i> Bắt Đầu Ngay
+            </button>
+        </section>
+
+        <!-- 2. MAN HINH CHOI GAME (GAMEPLAY SCREEN) -->
+        <section id="screen-gameplay" class="hidden glass-card rounded-3xl p-5 sm:p-8 flex-col">
+            <!-- Game HUD (Header Status) -->
+            <div class="flex justify-between items-center mb-4 pb-4 border-b border-white/10">
+                <div>
+                    <span class="text-xs uppercase font-extrabold text-slate-400 tracking-wider">Cấp Độ</span>
+                    <div id="game-level" class="text-xl font-black text-amber-400">Màn 1/10</div>
+                </div>
+                <div class="text-center">
+                    <span class="text-xs uppercase font-extrabold text-slate-400 tracking-wider">Điểm Số</span>
+                    <div id="game-score" class="text-2xl font-black text-cyan-400">0</div>
+                </div>
+                <div class="text-right">
+                    <span class="text-xs uppercase font-extrabold text-slate-400 tracking-wider">Dạng Bài</span>
+                    <div id="game-category" class="text-sm font-bold text-pink-300">Toán Tư Duy</div>
+                </div>
+            </div>
+
+            <!-- Timer Bar -->
+            <div class="w-full bg-slate-800/80 rounded-full h-3 mb-6 p-0.5 border border-white/10 overflow-hidden">
+                <div id="timer-bar" class="timer-progress bg-gradient-to-r from-emerald-400 via-amber-400 to-rose-500 h-full rounded-full w-full"></div>
+            </div>
+
+            <!-- Question & Challenge Area -->
+            <div id="question-container" class="min-h-[260px] flex flex-col justify-center items-center text-center my-auto">
+                <!-- Nội dung câu hỏi sẽ được render động qua JS -->
+            </div>
+
+            <!-- Feedback / Hint Bar -->
+            <div id="feedback-msg" class="h-8 text-center text-sm font-bold mt-2 opacity-0 transition-opacity">
+                <!-- Thông báo đúng/sai -->
+            </div>
+        </section>
+
+        <!-- 3. MAN HINH TỔNG KẾT (RESULT SCREEN) -->
+        <section id="screen-result" class="hidden glass-card rounded-3xl p-6 sm:p-10 text-center flex flex-col items-center">
+            <div class="w-24 h-24 rounded-full bg-gradient-to-tr from-amber-400 to-orange-500 flex items-center justify-center mb-4 shadow-xl">
+                <i class="fa-solid fa-award text-5xl text-slate-900"></i>
+            </div>
+
+            <h2 class="text-3xl font-black mb-1">KẾT QUẢ TỔNG KẾT</h2>
+            <p class="text-slate-300 text-sm mb-6">Bạn đã hoàn tất thử thách kiểm tra trí tuệ!</p>
+
+            <!-- IQ Power Badge -->
+            <div class="w-full bg-white/5 rounded-2xl p-6 border border-white/10 mb-6">
+                <div class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Chỉ Số Trí Tuệ (Brain Power)</div>
+                <div id="result-iq-title" class="text-3xl font-black text-amber-300 mb-2">SIÊU TRÍ TUỆ</div>
+                <div class="text-4xl font-extrabold text-cyan-400 mb-2"><span id="result-score">0</span> <span class="text-lg text-slate-400">điểm</span></div>
+                <p id="result-desc" class="text-sm text-slate-300 italic">Khả năng ghi nhớ và suy luận logic xuất sắc!</p>
+            </div>
+
+            <!-- Stats breakdown -->
+            <div class="grid grid-cols-2 gap-4 w-full mb-8">
+                <div class="bg-white/5 p-3 rounded-xl border border-white/10">
+                    <div class="text-xs text-slate-400">Câu Trả Lời Đúng</div>
+                    <div id="result-correct" class="text-xl font-bold text-emerald-400">0/10</div>
+                </div>
+                <div class="bg-white/5 p-3 rounded-xl border border-white/10">
+                    <div class="text-xs text-slate-400">Kỷ Lục Cá Nhân</div>
+                    <div id="result-high-score" class="text-xl font-bold text-amber-400">0</div>
+                </div>
+            </div>
+
+            <div class="flex space-x-3 w-full">
+                <button onclick="startGame()" class="btn-action flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-400 to-teal-500 text-slate-900 font-extrabold hover:opacity-95">
+                    <i class="fa-solid fa-rotate-right mr-2"></i> Chơi Lại
+                </button>
+                <button onclick="shareResult()" class="btn-action py-3.5 px-5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold border border-white/20">
+                    <i class="fa-solid fa-share-nodes"></i>
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="w-full p-4 text-center text-xs text-slate-400">
+        <p>Brain Power Quiz &copy; 2026 - Rèn Luyện Tư Duy Mỗi Ngày</p>
+    </footer>
+
+    <!-- GAME LOGIC SCRIPT -->
+    <script>
+        /* ==================== GLOBAL GAME STATE ==================== */
+        let gameState = {
+            score: 0,
+            currentLevel: 0,
+            totalLevels: 10,
+            correctCount: 0,
+            timer: null,
+            timeLeft: 0,
+            maxTime: 15,
+            isAudioEnabled: true,
+            highScore: parseInt(localStorage.getItem('brain_quiz_highscore') || '0'),
+            currentQuestion: null
+        };
+
+        // Danh sách kho câu hỏi đa dạng các thể loại
+        const questionPool = [
+            // --- THỂ LOẠI 1: GHI NHỚ (MEMORY) ---
+            {
+                type: 'memory_sequence',
+                category: 'Ghi Nhớ Dãy Số',
+                time: 12,
+                generate: (level) => {
+                    const length = 3 + Math.floor(level / 2); // Tăng độ dài chuỗi theo level
+                    const sequence = Array.from({length}, () => Math.floor(Math.random() * 9) + 1);
+                    return {
+                        sequence: sequence,
+                        displayTime: 2500 + (length * 300)
+                    };
+                }
+            },
+            {
+                type: 'memory_cards',
+                category: 'Trí Nhớ Hình Ảnh',
+                time: 15,
+                generate: () => {
+                    const icons = ['fa-apple-whole', 'fa-bolt', 'fa-car', 'fa-crown', 'fa-gem', 'fa-ghost'];
+                    const chosen = icons.sort(() => 0.5 - Math.random()).slice(0, 3);
+                    const pairs = [...chosen, ...chosen].sort(() => 0.5 - Math.random());
+                    return { cards: pairs };
+                }
+            },
+
+            // --- THỂ LOẠI 2: TOÁN & LOGIC (MATH & LOGIC) ---
+            {
+                type: 'math_quick',
+                category: 'Toán Tư Duy',
+                time: 10,
+                generate: (level) => {
+                    const ops = ['+', '-', '*'];
+                    const op = ops[Math.floor(Math.random() * (level > 4 ? 3 : 2))];
+                    let a, b, ans;
+
+                    if (op === '+') {
+                        a = Math.floor(Math.random() * 20 * level) + 5;
+                        b = Math.floor(Math.random() * 20 * level) + 5;
+                        ans = a + b;
+                    } else if (op === '-') {
+                        a = Math.floor(Math.random() * 30 * level) + 10;
+                        b = Math.floor(Math.random() * a);
+                        ans = a - b;
+                    } else {
+                        a = Math.floor(Math.random() * 9) + 2;
+                        b = Math.floor(Math.random() * 9) + 2;
+                        ans = a * b;
+                    }
+
+                    // Tạo 4 lựa chọn
+                    let options = new Set([ans]);
+                    while(options.size < 4) {
+                        let wrong = ans + (Math.floor(Math.random() * 10) - 5);
+                        if (wrong !== ans && wrong >= 0) options.add(wrong);
+                    }
+
+                    return {
+                        question: `${a} ${op === '*' ? '×' : op} ${b} = ?`,
+                        answer: ans,
+                        options: Array.from(options).sort(() => 0.5 - Math.random())
+                    };
+                }
+            },
+            {
+                type: 'logic_pattern',
+                category: 'Logic Quy Luật',
+                time: 12,
+                generate: () => {
+                    const step = Math.floor(Math.random() * 4) + 2;
+                    const start = Math.floor(Math.random() * 10) + 1;
+                    const seq = [start, start + step, start + step * 2, start + step * 3];
+                    const ans = start + step * 4;
+
+                    let options = new Set([ans]);
+                    while(options.size < 4) {
+                        let wrong = ans + (Math.floor(Math.random() * 8) - 4);
+                        if (wrong !== ans && wrong > 0) options.add(wrong);
+                    }
+
+                    return {
+                        question: `Điền số tiếp theo: ${seq.join(', ')},  <strong class="text-amber-400">?</strong>`,
+                        answer: ans,
+                        options: Array.from(options).sort(() => 0.5 - Math.random())
+                    };
+                }
+            },
+
+            // --- THỂ LOẠI 3: QUAN SÁT & TINH MẮT (OBSERVATION) ---
+            {
+                type: 'observation_count',
+                category: 'Quan Sát Nhanh',
+                time: 10,
+                generate: () => {
+                    const icons = ['fa-star', 'fa-heart', 'fa-moon', 'fa-bell', 'fa-circle'];
+                    const targetIcon = icons[Math.floor(Math.random() * icons.length)];
+                    const targetCount = Math.floor(Math.random() * 6) + 4; // 4 to 9
+                    
+                    let grid = Array(targetCount).fill(targetIcon);
+                    while(grid.length < 16) {
+                        let randomIcon = icons[Math.floor(Math.random() * icons.length)];
+                        if(randomIcon !== targetIcon) grid.push(randomIcon);
+                    }
+                    grid.sort(() => 0.5 - Math.random());
+
+                    let options = new Set([targetCount]);
+                    while(options.size < 4) {
+                        let wrong = targetCount + (Math.floor(Math.random() * 6) - 3);
+                        if (wrong !== targetCount && wrong > 0) options.add(wrong);
+                    }
+
+                    return {
+                        grid: grid,
+                        targetIcon: targetIcon,
+                        answer: targetCount,
+                        options: Array.from(options).sort((a,b) => a - b)
+                    };
+                }
+            },
+            {
+                type: 'observation_color',
+                category: 'Phản Xạ Màu Sắc',
+                time: 8,
+                generate: () => {
+                    const colors = [
+                        { name: 'ĐỎ', colorClass: 'text-red-500' },
+                        { name: 'XANH LÁ', colorClass: 'text-emerald-400' },
+                        { name: 'XANH DƯƠNG', colorClass: 'text-cyan-400' },
+                        { name: 'VÀNG', colorClass: 'text-yellow-400' },
+                        { name: 'TÍM', colorClass: 'text-purple-400' }
+                    ];
+
+                    const textObj = colors[Math.floor(Math.random() * colors.length)];
+                    let displayColorObj = colors[Math.floor(Math.random() * colors.length)];
+
+                    // Đảm bảo có xắc suất 50% trùng khớp hoặc khác
+                    const isMatch = textObj.name === displayColorObj.name;
+
+                    return {
+                        text: textObj.name,
+                        colorClass: displayColorObj.colorClass,
+                        answer: isMatch ? 'ĐÚNG' : 'SAI',
+                        questionText: 'Chữ hiển thị có CÙNG Ý NGHĨA với MÀU SẮC thể hiện?'
+                    };
+                }
+            }
+        ];
+
+        /* ==================== AUDIO SYNTHESIZER (TONE.JS) ==================== */
+        let synth, polySynth;
+        
+        function initAudio() {
+            if (!synth) {
+                synth = new Tone.Synth().toDestination();
+                polySynth = new Tone.PolySynth().toDestination();
+                synth.volume.value = -6;
+                polySynth.volume.value = -8;
+            }
+        }
+
+        function playSound(type) {
+            if (!gameState.isAudioEnabled) return;
+            try {
+                initAudio();
+                if (Tone.context.state !== 'running') {
+                    Tone.start();
+                }
+
+                if (type === 'click') {
+                    synth.triggerAttackRelease('C5', '8n');
+                } else if (type === 'correct') {
+                    polySynth.triggerAttackRelease(['C5', 'E5', 'G5'], '8n');
+                } else if (type === 'wrong') {
+                    synth.triggerAttackRelease('A2', '8n');
+                } else if (type === 'win') {
+                    polySynth.triggerAttackRelease(['C4', 'E4', 'G4', 'C5'], '4n');
+                }
+            } catch (e) {
+                console.log('Audio playback error:', e);
+            }
+        }
+
+        function toggleSound() {
+            gameState.isAudioEnabled = !gameState.isAudioEnabled;
+            const icon = document.getElementById('sound-icon');
+            if (gameState.isAudioEnabled) {
+                icon.className = 'fa-solid fa-volume-high text-lg';
+            } else {
+                icon.className = 'fa-solid fa-volume-xmark text-lg opacity-50';
+            }
+        }
+
+        /* ==================== SCREEN SWITCHING ==================== */
+        function showScreen(screenId) {
+            document.getElementById('screen-welcome').classList.add('hidden');
+            document.getElementById('screen-gameplay').classList.add('hidden');
+            document.getElementById('screen-result').classList.add('hidden');
+
+            const target = document.getElementById(screenId);
+            target.classList.remove('hidden');
+            target.classList.add('flex');
+        }
+
+        /* ==================== GAME FLOW CONTROL ==================== */
+        function startGame() {
+            playSound('click');
+            gameState.score = 0;
+            gameState.currentLevel = 0;
+            gameState.correctCount = 0;
+            updateHeaderHighScore();
+
+            showScreen('screen-gameplay');
+            nextQuestion();
+        }
+
+        function updateHeaderHighScore() {
+            document.getElementById('header-high-score').innerText = gameState.highScore;
+        }
+
+        function nextQuestion() {
+            gameState.currentLevel++;
+
+            if (gameState.currentLevel > gameState.totalLevels) {
+                endGame();
+                return;
+            }
+
+            // Cập nhật UI Header Game
+            document.getElementById('game-level').innerText = `Màn ${gameState.currentLevel}/${gameState.totalLevels}`;
+            document.getElementById('game-score').innerText = gameState.score;
+            document.getElementById('feedback-msg').classList.add('opacity-0');
+
+            // Chọn ngẫu nhiên loại câu hỏi
+            const template = questionPool[Math.floor(Math.random() * questionPool.length)];
+            document.getElementById('game-category').innerText = template.category;
+
+            gameState.currentQuestion = {
+                template: template,
+                data: template.generate(gameState.currentLevel)
+            };
+
+            renderQuestion(template.type, gameState.currentQuestion.data);
+            startTimer(template.time);
+        }
+
+        /* ==================== TIMER SYSTEM ==================== */
+        function startTimer(seconds) {
+            clearInterval(gameState.timer);
+            gameState.timeLeft = seconds;
+            gameState.maxTime = seconds;
+            
+            const timerBar = document.getElementById('timer-bar');
+            timerBar.style.width = '100%';
+
+            gameState.timer = setInterval(() => {
+                gameState.timeLeft -= 0.1;
+                const percentage = Math.max(0, (gameState.timeLeft / gameState.maxTime) * 100);
+                timerBar.style.width = `${percentage}%`;
+
+                if (gameState.timeLeft <= 0) {
+                    clearInterval(gameState.timer);
+                    handleAnswer(false, true); // Hết giờ = tính là trả lời sai
+                }
+            }, 100);
+        }
+
+        function stopTimer() {
+            clearInterval(gameState.timer);
+        }
+
+        /* ==================== QUESTION RENDERERS ==================== */
+        function renderQuestion(type, data) {
+            const container = document.getElementById('question-container');
+            container.innerHTML = '';
+
+            switch (type) {
+                case 'memory_sequence':
+                    renderMemorySequence(container, data);
+                    break;
+                case 'memory_cards':
+                    renderMemoryCards(container, data);
+                    break;
+                case 'math_quick':
+                case 'logic_pattern':
+                    renderMultipleChoice(container, data);
+                    break;
+                case 'observation_count':
+                    renderObservationCount(container, data);
+                    break;
+                case 'observation_color':
+                    renderTrueFalse(container, data);
+                    break;
+            }
+        }
+
+        // 1. Ghi nhớ dãy số
+        function renderMemorySequence(container, data) {
+            container.innerHTML = `
+                <div id="memory-phase-1" class="w-full">
+                    <p class="text-sm text-slate-300 mb-4">Hãy ghi nhớ dãy số sau:</p>
+                    <div class="flex justify-center space-x-2 my-6">
+                        ${data.sequence.map(num => `
+                            <div class="w-12 h-16 bg-gradient-to-b from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-2xl font-black shadow-lg animate-pulse">
+                                ${num}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                <div id="memory-phase-2" class="hidden w-full">
+                    <p class="text-sm text-slate-300 mb-4">Nhập lại dãy số theo đúng thứ tự:</p>
+                    <div id="sequence-input-display" class="h-14 bg-white/5 border border-white/20 rounded-2xl flex items-center justify-center text-2xl font-black tracking-widest text-amber-300 mb-6">
+                        _
+                    </div>
+                    <div class="grid grid-cols-5 gap-2 max-w-xs mx-auto">
+                        ${[1,2,3,4,5,6,7,8,9,0].map(num => `
+                            <button onclick="inputSequenceNumber(${num})" class="btn-action bg-white/10 hover:bg-white/20 py-3 rounded-xl font-bold text-lg">
+                                ${num}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+
+            // Đếm ngược ẩn dãy số sau thời gian ngắn
+            setTimeout(() => {
+                const phase1 = document.getElementById('memory-phase-1');
+                const phase2 = document.getElementById('memory-phase-2');
+                if (phase1 && phase2) {
+                    phase1.classList.add('hidden');
+                    phase2.classList.remove('hidden');
+                    window.userSeqInput = [];
+                }
+            }, data.displayTime);
+        }
+
+        window.userSeqInput = [];
+        function inputSequenceNumber(num) {
+            playSound('click');
+            window.userSeqInput.push(num);
+            const targetSeq = gameState.currentQuestion.data.sequence;
+            
+            document.getElementById('sequence-input-display').innerText = window.userSeqInput.join(' ');
+
+            if (window.userSeqInput.length === targetSeq.length) {
+                const isCorrect = JSON.stringify(window.userSeqInput) === JSON.stringify(targetSeq);
+                handleAnswer(isCorrect);
+            }
+        }
+
+        // 2. Lật thẻ ghi nhớ
+        function renderMemoryCards(container, data) {
+            container.innerHTML = `
+                <p class="text-sm text-slate-300 mb-4">Tìm các cặp hình giống nhau:</p>
+                <div class="grid grid-cols-3 gap-3 max-w-xs mx-auto">
+                    ${data.cards.map((icon, idx) => `
+                        <div onclick="flipCard(this, '${icon}', ${idx})" class="memory-card h-20 bg-indigo-600/50 hover:bg-indigo-600/80 rounded-2xl border border-white/20 flex items-center justify-center cursor-pointer text-2xl text-transparent">
+                            <i class="fa-solid ${icon}"></i>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            window.flippedCards = [];
+            window.matchedPairs = 0;
+        }
+
+        function flipCard(element, icon, idx) {
+            if (element.classList.contains('matched') || window.flippedCards.some(c => c.element === element)) return;
+            playSound('click');
+
+            element.classList.remove('text-transparent');
+            element.classList.add('bg-amber-400', 'text-slate-900');
+
+            window.flippedCards.push({ element, icon, idx });
+
+            if (window.flippedCards.length === 2) {
+                const [card1, card2] = window.flippedCards;
+                if (card1.icon === card2.icon) {
+                    playSound('correct');
+                    card1.element.classList.add('matched', 'opacity-50');
+                    card2.element.classList.add('matched', 'opacity-50');
+                    window.matchedPairs++;
+                    window.flippedCards = [];
+
+                    if (window.matchedPairs === 3) {
+                        handleAnswer(true);
+                    }
+                } else {
+                    setTimeout(() => {
+                        card1.element.classList.add('text-transparent');
+                        card1.element.classList.remove('bg-amber-400', 'text-slate-900');
+                        card2.element.classList.add('text-transparent');
+                        card2.element.classList.remove('bg-amber-400', 'text-slate-900');
+                        window.flippedCards = [];
+                    }, 500);
+                }
+            }
+        }
+
+        // 3. Trắc nghiệm (Toán & Logic)
+        function renderMultipleChoice(container, data) {
+            container.innerHTML = `
+                <div class="text-2xl sm:text-3xl font-black mb-6 text-white leading-relaxed">
+                    ${data.question}
+                </div>
+                <div class="grid grid-cols-2 gap-3 w-full max-w-md">
+                    ${data.options.map(opt => `
+                        <button onclick="checkChoice(${opt}, ${data.answer})" class="btn-action bg-white/10 hover:bg-white/20 py-4 rounded-2xl text-xl font-extrabold border border-white/10">
+                            ${opt}
+                        </button>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function checkChoice(selected, correct) {
+            handleAnswer(selected === correct);
+        }
+
+        // 4. Đếm hình nhanh (Quan sát)
+        function renderObservationCount(container, data) {
+            container.innerHTML = `
+                <p class="text-sm text-slate-300 mb-2">Có bao nhiêu biểu tượng <i class="fa-solid ${data.targetIcon} text-amber-300 text-lg mx-1"></i> xuất hiện?</p>
+                <div class="grid grid-cols-4 gap-2 bg-slate-900/50 p-4 rounded-2xl border border-white/10 mb-6">
+                    ${data.grid.map(icon => `
+                        <div class="h-10 flex items-center justify-center text-xl ${icon === data.targetIcon ? 'text-amber-300' : 'text-slate-500'}">
+                            <i class="fa-solid ${icon}"></i>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="grid grid-cols-4 gap-2 w-full max-w-xs">
+                    ${data.options.map(opt => `
+                        <button onclick="checkChoice(${opt}, ${data.answer})" class="btn-action bg-white/10 hover:bg-white/20 py-3 rounded-xl font-bold text-lg">
+                            ${opt}
+                        </button>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // 5. Đúng / Sai (Phản xạ màu sắc)
+        function renderTrueFalse(container, data) {
+            container.innerHTML = `
+                <p class="text-xs text-slate-300 mb-4">${data.questionText}</p>
+                <div class="text-4xl font-black ${data.colorClass} tracking-widest my-8 p-4 bg-slate-900/40 rounded-2xl border border-white/10">
+                    ${data.text}
+                </div>
+                <div class="grid grid-cols-2 gap-4 w-full max-w-xs">
+                    <button onclick="checkTrueFalse('ĐÚNG', '${data.answer}')" class="btn-action bg-emerald-500/80 hover:bg-emerald-500 py-4 rounded-2xl text-lg font-black tracking-wider">
+                        <i class="fa-solid fa-check mr-1"></i> ĐÚNG
+                    </button>
+                    <button onclick="checkTrueFalse('SAI', '${data.answer}')" class="btn-action bg-rose-500/80 hover:bg-rose-500 py-4 rounded-2xl text-lg font-black tracking-wider">
+                        <i class="fa-solid fa-xmark mr-1"></i> SAI
+                    </button>
+                </div>
+            `;
+        }
+
+        function checkTrueFalse(selected, answer) {
+            handleAnswer(selected === answer);
+        }
+
+        /* ==================== ANSWER HANDLING ==================== */
+        function handleAnswer(isCorrect, isTimeout = false) {
+            stopTimer();
+
+            const feedback = document.getElementById('feedback-msg');
+            const card = document.getElementById('screen-gameplay');
+            feedback.classList.remove('opacity-0');
+
+            if (isCorrect) {
+                playSound('correct');
+                // Tính điểm dựa trên thời gian còn lại
+                const timeBonus = Math.floor(gameState.timeLeft * 10);
+                const pointsEarned = 100 + timeBonus;
+                gameState.score += pointsEarned;
+                gameState.correctCount++;
+
+                feedback.className = 'h-8 text-center text-sm font-bold mt-2 text-emerald-400';
+                feedback.innerHTML = `<i class="fa-solid fa-circle-check"></i> CHÍNH XÁC! +${pointsEarned} điểm`;
+            } else {
+                playSound('wrong');
+                card.classList.add('animate-shake');
+                setTimeout(() => card.classList.remove('animate-shake'), 400);
+
+                feedback.className = 'h-8 text-center text-sm font-bold mt-2 text-rose-400';
+                feedback.innerHTML = isTimeout 
+                    ? `<i class="fa-solid fa-clock"></i> HẾT GIỜ RỒI!` 
+                    : `<i class="fa-solid fa-circle-xmark"></i> CHƯA CHÍNH XÁC!`;
+            }
+
+            // Chuyển sang câu tiếp theo sau 1.2s
+            setTimeout(() => {
+                nextQuestion();
+            }, 1200);
+        }
+
+        /* ==================== END GAME & RESULT ==================== */
+        function endGame() {
+            playSound('win');
+
+            // Cập nhật kỷ lục
+            if (gameState.score > gameState.highScore) {
+                gameState.highScore = gameState.score;
+                localStorage.setItem('brain_quiz_highscore', gameState.highScore.toString());
+            }
+
+            // Đánh giá danh hiệu IQ dựa trên số câu đúng & điểm
+            let iqTitle = "TẬP SỰ";
+            let iqDesc = "Bạn cần rèn luyện thêm khả năng tập trung và phản xạ!";
+
+            if (gameState.score >= 1200) {
+                iqTitle = "SIÊU TRÍ TUỆ (GENIUS)";
+                iqDesc = "Trí nhớ hoàn hảo, tư duy logic và phản xạ cực kỳ xuất sắc!";
+            } else if (gameState.score >= 800) {
+                iqTitle = "COMMANDER (TƯ DUY SẮC BẮC)";
+                iqDesc = "Khả năng quan sát và tính toán nhanh nhạy đáng kinh ngạc!";
+            } else if (gameState.score >= 500) {
+                iqTitle = "THÔNG MINH (SMART)";
+                iqDesc = "Bạn có nền tảng tư duy và trí nhớ rất tốt!";
+            }
+
+            document.getElementById('result-iq-title').innerText = iqTitle;
+            document.getElementById('result-desc').innerText = iqDesc;
+            document.getElementById('result-score').innerText = gameState.score;
+            document.getElementById('result-correct').innerText = `${gameState.correctCount}/${gameState.totalLevels}`;
+            document.getElementById('result-high-score').innerText = gameState.highScore;
+
+            showScreen('screen-result');
+
+            // Bắn pháo hoa chào mừng
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+        }
+
+        function shareResult() {
+            const shareText = `Tôi vừa đạt ${gameState.score} điểm trong game Thử Thách Trí Tuệ (Brain Power Quiz)! Bạn có thể vượt qua kỷ lục của tôi không?`;
+            
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(shareText);
+                alert('Đã sao chép kết quả vào bộ nhớ tạm! Bạn có thể dán để chia sẻ.');
+            } else {
+                alert(shareText);
+            }
+        }
+
+        // Khởi tạo điểm cao ban đầu trên UI
+        updateHeaderHighScore();
+    </script>
+</body>
+</html>
